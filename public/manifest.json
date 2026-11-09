@@ -1,0 +1,39 @@
+{
+  "name": "Aadarsh's JARVIS",
+  "short_name": "Aadarsh's JARVIS",
+  "description": "Aadarsh's JARVIS — personal AI assistant with 3D holographic reactor, voice recognition, live web intelligence, Showcase Mode and Friends Challenge.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#010309",
+  "theme_color": "#02060f",
+  "lang": "en-GB",
+  "categories": ["productivity", "education", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

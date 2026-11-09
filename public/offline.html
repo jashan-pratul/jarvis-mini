@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Aadarsh's JARVIS — Offline</title>
+    <meta name="theme-color" content="#02060f" />
+    <style>
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: radial-gradient(circle at 50% 35%, #0a1d3d 0%, #010309 75%);
+        color: #dceaf7;
+        font-family: system-ui, -apple-system, sans-serif;
+        text-align: center;
+      }
+      .ring {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        border: 2px solid #38e1ff;
+        box-shadow: 0 0 32px rgba(56, 225, 255, 0.55);
+        margin-bottom: 24px;
+      }
+      h1 {
+        letter-spacing: 0.12em;
+        font-size: 1.35rem;
+        margin: 0 0 8px;
+      }
+      p {
+        max-width: 320px;
+        color: #8fa6c2;
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      button {
+        margin-top: 20px;
+        min-height: 48px;
+        padding: 0 24px;
+        border-radius: 14px;
+        border: 1px solid #38e1ff;
+        background: rgba(56, 225, 255, 0.15);
+        color: #fff;
+        font-weight: 600;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ring"></div>
+    <h1>AADARSH'S JARVIS</h1>
+    <p>You appear to be offline and the cached app shell is updating. Reconnect and tap below to resume.</p>
+    <button onclick="location.reload()">Reconnect</button>
+  </body>
+</html>

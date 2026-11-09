@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: aadarshs-jarvis
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run icons && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OWNER_PASSCODE
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: DATABASE_PATH
+        value: /var/data/jarvis.sqlite
+    disk:
+      name: jarvis-sqlite
+      mountPath: /var/data
+      sizeGB: 1
