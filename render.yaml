@@ -16,7 +16,7 @@ services:
       - key: OWNER_PASSCODE
         sync: false
       - key: GEMINI_MODEL
-        value: gemini-2.5-flash
+        value: gemini-3-flash-preview
       - key: DATABASE_PATH
         value: /var/data/jarvis.sqlite
     disk:

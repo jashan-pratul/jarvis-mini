@@ -10,6 +10,18 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Resolves the API endpoint. In local dev or with a Vercel rewrite, VITE_API_URL can be omitted
+ * to use relative /api paths. If pointing directly to a separate backend (e.g. Render),
+ * set VITE_API_URL=https://<your-service>.onrender.com in Vercel environment variables.
+ */
+export const API_BASE = (import.meta.env.VITE_API_URL ?? '').trim().replace(/\/$/, '');
+
+export function apiUrl(path: string): string {
+  const clean = path.startsWith('/') ? path : `/${path}`;
+  return API_BASE ? `${API_BASE}${clean}` : clean;
+}
+
 interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
@@ -31,7 +43,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
     let res: Response;
     try {
-      res = await fetch(path, {
+      res = await fetch(apiUrl(path), {
         method,
         headers,
         body: body === undefined ? undefined : JSON.stringify(body),
@@ -79,8 +91,15 @@ export async function checkHealth(): Promise<BackendHealth> {
       ownerProtected: data.owner.protected,
       latencyMs: Math.round(performance.now() - started),
       checkedAt: Date.now(),
+      offlineReason: null,
     };
-  } catch {
+  } catch (err) {
+    const reason =
+      err instanceof ApiError && err.status === 404
+        ? 'Backend endpoint returned 404 (configure VITE_API_URL or deploy Render backend)'
+        : err instanceof Error
+          ? err.message
+          : 'Could not contact server';
     return {
       reachable: false,
       aiConfigured: false,
@@ -89,6 +108,7 @@ export async function checkHealth(): Promise<BackendHealth> {
       ownerProtected: true,
       latencyMs: null,
       checkedAt: Date.now(),
+      offlineReason: reason,
     };
   }
 }
@@ -108,7 +128,7 @@ export interface StreamChatParams {
 export async function streamChatReply(params: StreamChatParams): Promise<void> {
   let res: Response;
   try {
-    res = await fetch('/api/chat', {
+    res = await fetch(apiUrl('/api/chat'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

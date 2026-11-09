@@ -3,6 +3,7 @@ import { Battery, Clock, Cpu, Globe, Mic, RefreshCw, Server, Wifi } from 'lucide
 import { useJarvisStore } from '../../hooks/useJarvisStore';
 import { checkHealth } from '../../services/api';
 import { detectWebGL } from '../../utils/device';
+import { getISTTime, selectGreeting } from '../../utils/greetings';
 import { getSpeechRecognitionCtor } from '../../utils/speechSupport';
 
 interface BatteryState {
@@ -159,7 +160,15 @@ function formatUptime(sec: number): string {
 
 export function DiagnosticsView() {
   const diag = useDeviceDiagnostics();
+  const settings = useJarvisStore((s) => s.settings);
   const [refreshing, setRefreshing] = useState(false);
+
+  const ist = getISTTime(diag.now);
+  const currentGreeting = selectGreeting({
+    ownerName: settings.ownerName,
+    date: diag.now,
+    avoidRepeat: false,
+  });
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -193,6 +202,32 @@ export function DiagnosticsView() {
           <RefreshCw size={15} className={refreshing ? 'animate-spin' : ''} />
           <span>Ping Server</span>
         </button>
+      </div>
+
+      {/* Live Indian Standard Time (IST) Clock & Greeting Status */}
+      <div className="glass-panel mb-3 p-3.5 border border-cyan/30 bg-gradient-to-r from-cyan/10 via-space/60 to-transparent">
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2">
+            <Clock size={16} className="text-cyan animate-pulse" />
+            <span className="hud-label text-[11px] text-cyan font-bold tracking-wider">
+              INDIAN STANDARD TIME (IST · UTC+05:30)
+            </span>
+          </div>
+          <span className="rounded bg-cyan/15 px-2 py-0.5 font-mono text-[10px] text-cyan uppercase font-semibold">
+            {ist.periodLabel}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mt-1">
+          <div className="font-mono text-2xl font-bold tracking-tight text-white text-glow">
+            {ist.timeString}
+          </div>
+          <div className="font-sans text-xs text-steel">
+            {ist.dateString} · {ist.weekday}
+          </div>
+        </div>
+        <p className="mt-2 text-xs italic text-[#cfe9f7] border-t border-cyan/15 pt-2">
+          &ldquo;{currentGreeting.text}&rdquo;
+        </p>
       </div>
 
       <div className="grid gap-2.5 pb-6 sm:grid-cols-2">

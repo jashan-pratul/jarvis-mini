@@ -22,7 +22,7 @@ import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { ApiError, memoryApi, streamChatReply, type SecretCommandItem } from '../../services/api';
 import { bumpPulse } from '../../utils/audioBus';
 import { parseLocalCommand } from '../../utils/commandParser';
-import { selectGreeting } from '../../utils/greetings';
+import { getDayPeriod, selectGreeting } from '../../utils/greetings';
 import { sfx } from '../../utils/sfx';
 import { ReactorHost } from '../Reactor/ReactorHost';
 
@@ -61,6 +61,10 @@ export function CoreView() {
   const setShareOpen = useJarvisStore((s) => s.setShareOpen);
   const ownerKey = useJarvisStore((s) => s.ownerKey);
   const toast = useJarvisStore((s) => s.toast);
+  const sessionGreeted = useJarvisStore((s) => s.sessionGreeted);
+  const setSessionGreeted = useJarvisStore((s) => s.setSessionGreeted);
+  const currentDayPeriod = useJarvisStore((s) => s.currentDayPeriod);
+  const setCurrentDayPeriod = useJarvisStore((s) => s.setCurrentDayPeriod);
 
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
@@ -69,7 +73,6 @@ export function CoreView() {
   const [greetingBanner, setGreetingBanner] = useState<string>('');
 
   const abortRef = useRef<AbortController | null>(null);
-  const greetedRef = useRef(false);
   const listEndRef = useRef<HTMLDivElement | null>(null);
 
   const tts = useSpeechSynthesis();
@@ -83,13 +86,15 @@ export function CoreView() {
 
   // Speak & display personalised time-aware greeting on session boot.
   useEffect(() => {
-    if (greetedRef.current) return;
-    greetedRef.current = true;
-    const { text } = selectGreeting({
+    const { text, period } = selectGreeting({
       ownerName: settings.ownerName,
       customGreetings: settings.customGreetings,
     });
     setGreetingBanner(text);
+    setCurrentDayPeriod(period);
+
+    if (sessionGreeted) return;
+    setSessionGreeted(true);
 
     const last = messages[messages.length - 1];
     const stale = !last || Date.now() - last.createdAt > 15 * 60 * 1000;
@@ -97,12 +102,34 @@ export function CoreView() {
       addMessage({ role: 'jarvis', text, origin: 'local' });
     }
     if (!settings.voiceMuted) {
-      const t = window.setTimeout(() => tts.speak(text), 250);
+      const t = window.setTimeout(() => {
+        try {
+          tts.speak(text);
+        } catch {
+          /* browser autoplay restrictions gracefully handled */
+        }
+      }, 350);
       return () => window.clearTimeout(t);
     }
     return undefined;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [sessionGreeted]);
+
+  // Seamlessly update greeting context across day-period transitions without interrupting conversations
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const p = getDayPeriod();
+      if (p !== currentDayPeriod) {
+        setCurrentDayPeriod(p);
+        const { text } = selectGreeting({
+          ownerName: settings.ownerName,
+          customGreetings: settings.customGreetings,
+        });
+        setGreetingBanner(text);
+      }
+    }, 10000);
+    return () => window.clearInterval(timer);
+  }, [currentDayPeriod, setCurrentDayPeriod, settings.ownerName, settings.customGreetings]);
 
   useEffect(() => {
     listEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });

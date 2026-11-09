@@ -4,7 +4,12 @@ import { useJarvisStore } from '../../hooks/useJarvisStore';
 function useLinkStatus() {
   const backend = useJarvisStore((s) => s.backend);
   if (!backend) return { color: 'bg-steel', label: 'Checking link' };
-  if (!backend.reachable) return { color: 'bg-danger', label: 'Server offline' };
+  if (!backend.reachable) {
+    const hint = backend.offlineReason?.includes('404')
+      ? 'Backend 404 (check VITE_API_URL)'
+      : 'Backend offline (local mode active)';
+    return { color: 'bg-amber', label: hint };
+  }
   if (!backend.aiConfigured) return { color: 'bg-amber', label: 'AI not configured' };
   return { color: 'bg-success', label: 'All systems online' };
 }

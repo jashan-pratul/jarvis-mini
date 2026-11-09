@@ -55,6 +55,7 @@ export interface BackendHealth {
   ownerProtected: boolean;
   latencyMs: number | null;
   checkedAt: number;
+  offlineReason?: string | null;
 }
 
 export interface Toast {
@@ -100,6 +101,8 @@ interface JarvisState {
   fps: number | null;
   activeQuality: Exclude<Quality, 'auto'>;
   startedAt: number;
+  sessionGreeted: boolean;
+  currentDayPeriod: DayPeriod;
 
   setBooted: (v: boolean) => void;
   setView: (v: View) => void;
@@ -107,6 +110,8 @@ interface JarvisState {
   setInterim: (t: string) => void;
   setBackend: (b: BackendHealth | null) => void;
   setOwnerKey: (k: string | null) => void;
+  setSessionGreeted: (v: boolean) => void;
+  setCurrentDayPeriod: (p: DayPeriod) => void;
   updateSettings: (patch: Partial<Settings>) => void;
   addMessage: (m: Omit<ChatMessage, 'id' | 'createdAt'> & { id?: string }) => string;
   updateMessage: (id: string, patch: Partial<ChatMessage>) => void;
@@ -144,12 +149,16 @@ export const useJarvisStore = create<JarvisState>()(
       fps: null,
       activeQuality: 'balanced',
       startedAt: Date.now(),
+      sessionGreeted: false,
+      currentDayPeriod: 'morning',
 
       setBooted: (booted) => set({ booted }),
       setView: (view) => set({ view }),
       setReactorState: (reactorState) => set({ reactorState }),
       setInterim: (interimTranscript) => set({ interimTranscript }),
       setBackend: (backend) => set({ backend }),
+      setSessionGreeted: (sessionGreeted) => set({ sessionGreeted }),
+      setCurrentDayPeriod: (currentDayPeriod) => set({ currentDayPeriod }),
       setOwnerKey: (ownerKey) => {
         if (ownerKey) sessionStorage.setItem('jarvis-owner-key', ownerKey);
         else sessionStorage.removeItem('jarvis-owner-key');

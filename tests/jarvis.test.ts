@@ -7,29 +7,54 @@ import { buildInvitationMessage } from '../src/components/ShareModal/ShareModal.
 import { memories, notes, scores, secretCommands } from '../server/services/dbService.js';
 
 describe('Personal Greeting System', () => {
-  it('maps local hours to morning, afternoon, evening, and night', () => {
-    assert.equal(getDayPeriod(new Date(2026, 10, 8, 7, 30)), 'morning');
-    assert.equal(getDayPeriod(new Date(2026, 10, 8, 14, 0)), 'afternoon');
-    assert.equal(getDayPeriod(new Date(2026, 10, 8, 19, 15)), 'evening');
-    assert.equal(getDayPeriod(new Date(2026, 10, 8, 23, 45)), 'night');
-    assert.equal(getDayPeriod(new Date(2026, 10, 8, 2, 10)), 'night');
+  it('maps all 8 required simulated IST times to exact periods', () => {
+    // 05:00–11:59: Good morning
+    assert.equal(getDayPeriod('06:30'), 'morning');
+    assert.equal(getDayPeriod('11:59'), 'morning');
+
+    // 12:00–16:59: Good afternoon
+    assert.equal(getDayPeriod('12:00'), 'afternoon');
+    assert.equal(getDayPeriod('16:59'), 'afternoon');
+
+    // 17:00–20:59: Good evening
+    assert.equal(getDayPeriod('17:00'), 'evening');
+    assert.equal(getDayPeriod('20:59'), 'evening');
+
+    // 21:00–04:59: Good night
+    assert.equal(getDayPeriod('21:00'), 'night');
+    assert.equal(getDayPeriod('00:30'), 'night');
   });
 
-  it('produces exact signature greetings for Aadarsh', () => {
-    const m = selectGreeting({ ownerName: 'Aadarsh', date: new Date(2026, 10, 8, 8, 0), avoidRepeat: false });
+  it('produces exact signature greetings for Aadarsh across all periods', () => {
+    const morning = selectGreeting({ ownerName: 'Aadarsh', date: '06:30', avoidRepeat: false });
     assert.equal(
-      m.text,
-      'Good morning, Aadarsh. Your personal AI assistant is online. Ready to make today productive, sir?',
+      morning.text,
+      'Good morning, Aadarsh. Your JARVIS is online and ready to assist you, sir.',
     );
-    const e = selectGreeting({ ownerName: 'Aadarsh', date: new Date(2026, 10, 8, 18, 0), avoidRepeat: false });
-    assert.equal(e.text, "Good evening, Aadarsh. Your JARVIS is at your service, sir.");
-    assert.ok(GREETING_SIGNATURE.night.includes('Working late'));
+
+    const afternoon = selectGreeting({ ownerName: 'Aadarsh', date: '12:00', avoidRepeat: false });
+    assert.equal(
+      afternoon.text,
+      'Good afternoon, Aadarsh. All systems standing by. What shall we accomplish today, sir?',
+    );
+
+    const evening = selectGreeting({ ownerName: 'Aadarsh', date: '17:00', avoidRepeat: false });
+    assert.equal(
+      evening.text,
+      'Good evening, Aadarsh. Your JARVIS is at your service, sir.',
+    );
+
+    const night = selectGreeting({ ownerName: 'Aadarsh', date: '21:00', avoidRepeat: false });
+    assert.equal(
+      night.text,
+      'Working late, Aadarsh? Your JARVIS is still standing by. How may I assist you, sir?',
+    );
   });
 
   it('honours custom greeting overrides', () => {
     const g = selectGreeting({
       ownerName: 'Aadarsh',
-      date: new Date(2026, 10, 8, 9, 0),
+      date: '06:30',
       customGreetings: { morning: 'Top of the morning, {name}!' },
     });
     assert.equal(g.text, 'Top of the morning, Aadarsh!');

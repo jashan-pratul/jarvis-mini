@@ -55,11 +55,20 @@ app.use(
     origin(origin, callback) {
       // Same-origin requests (no Origin header) and configured origins only.
       if (!origin || config.corsOrigins.includes(origin)) return callback(null, true);
+      // Explicitly allow production Vercel frontend and preview deployments
+      if (
+        origin &&
+        (/^https:\/\/(jarvis-mini[a-z0-9-]*|aadarshs-jarvis[a-z0-9-]*)\.vercel\.app$/.test(origin) ||
+          origin === 'https://jarvis-mini-eta.vercel.app')
+      ) {
+        return callback(null, true);
+      }
       if (!config.isProduction && /^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.|10\.)/.test(origin)) {
         return callback(null, true);
       }
       return callback(null, false);
     },
+    credentials: true,
   }),
 );
 
