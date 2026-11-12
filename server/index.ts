@@ -107,6 +107,8 @@ app.get('/api/health', (_req, res) => {
     runtime: {
       isVercel: Boolean(process.env.VERCEL),
       vercelEnv: process.env.VERCEL_ENV ?? null,
+      projectName: process.env.VERCEL_PROJECT_NAME ?? null,
+      repoSlug: process.env.VERCEL_GIT_REPO_SLUG ?? null,
       commitSha: process.env.VERCEL_GIT_COMMIT_SHA ? process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7) : null,
       branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
       customEnvKeys: Object.keys(process.env)
