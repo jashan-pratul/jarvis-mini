@@ -145,7 +145,11 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   });
 });
 
-app.listen(config.port, () => {
-  console.log(`\n  ◉ Aadarsh's JARVIS server online → http://localhost:${config.port}`);
-  for (const warning of validateConfig()) console.warn(`  ⚠ ${warning}`);
-});
+export default app;
+
+if (!process.env.VERCEL) {
+  app.listen(config.port, () => {
+    console.log(`\n  ◉ Aadarsh's JARVIS server online → http://localhost:${config.port}`);
+    for (const warning of validateConfig()) console.warn(`  ⚠ ${warning}`);
+  });
+}

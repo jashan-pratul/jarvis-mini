@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { getDayPeriod } from '../utils/greetings';
 
 export type View = 'core' | 'showcase' | 'arena' | 'vault' | 'system';
 export type ReactorState = 'idle' | 'listening' | 'thinking' | 'speaking' | 'error';
@@ -150,7 +151,7 @@ export const useJarvisStore = create<JarvisState>()(
       activeQuality: 'balanced',
       startedAt: Date.now(),
       sessionGreeted: false,
-      currentDayPeriod: 'morning',
+      currentDayPeriod: getDayPeriod(),
 
       setBooted: (booted) => set({ booted }),
       setView: (view) => set({ view }),

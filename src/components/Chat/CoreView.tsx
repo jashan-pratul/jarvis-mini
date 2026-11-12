@@ -93,14 +93,39 @@ export function CoreView() {
     setGreetingBanner(text);
     setCurrentDayPeriod(period);
 
-    if (sessionGreeted) return;
+    const SESSION_GREETED_KEY = 'jarvis_session_greeted';
+    const alreadyGreeted =
+      sessionGreeted ||
+      (typeof sessionStorage !== 'undefined' &&
+        sessionStorage.getItem(SESSION_GREETED_KEY) === 'true');
+
+    if (alreadyGreeted) {
+      if (!sessionGreeted) setSessionGreeted(true);
+      return;
+    }
+
     setSessionGreeted(true);
+    if (typeof sessionStorage !== 'undefined') {
+      sessionStorage.setItem(SESSION_GREETED_KEY, 'true');
+    }
 
     const last = messages[messages.length - 1];
-    const stale = !last || Date.now() - last.createdAt > 15 * 60 * 1000;
-    if (stale) {
+    // Check if the last item is already an automated greeting to prevent duplicate back-to-back greetings
+    const isLastGreeting =
+      last &&
+      last.role === 'jarvis' &&
+      last.origin === 'local' &&
+      /^(Good morning|Good afternoon|Good evening|Working late|Morning|Evening|Burning the midnight oil|Night mode engaged|A fresh start|Welcome back)/i.test(
+        last.text.trim(),
+      );
+
+    if (isLastGreeting) {
+      // Refresh the existing greeting to match current IST period rather than appending a duplicate
+      updateMessage(last.id, { text, createdAt: Date.now() });
+    } else {
       addMessage({ role: 'jarvis', text, origin: 'local' });
     }
+
     if (!settings.voiceMuted) {
       const t = window.setTimeout(() => {
         try {

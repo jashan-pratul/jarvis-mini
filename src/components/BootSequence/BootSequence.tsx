@@ -24,7 +24,7 @@ interface Props {
 export function BootSequence({ onIgnite, onComplete }: Props) {
   const [stage, setStage] = useState<Stage>('gate');
   const [revealed, setRevealed] = useState(0);
-  const { checks, run, progress, complete } = useBootChecks();
+  const { checks, run, progress, complete, onlineCount, offlineCount } = useBootChecks();
   const soundFx = useJarvisStore((s) => s.settings.soundFx);
   const updateSettings = useJarvisStore((s) => s.updateSettings);
   const initStartedAt = useRef(0);
@@ -170,9 +170,16 @@ export function BootSequence({ onIgnite, onComplete }: Props) {
                   transition={{ duration: 0.35 }}
                 />
               </div>
-              <p className="mt-2 text-right font-mono text-[11px] text-steel">
-                {checks.filter((c) => c.status !== 'pending').length}/{checks.length} subsystems verified
-              </p>
+              <div className="mt-2 flex items-center justify-between font-mono text-[11px]">
+                <span className={offlineCount > 0 ? 'text-amber font-semibold' : 'text-cyan'}>
+                  {offlineCount > 0
+                    ? `${offlineCount} subsystem(s) offline`
+                    : `${onlineCount}/${checks.length} online`}
+                </span>
+                <span className="text-steel">
+                  {onlineCount}/{checks.length} operational
+                </span>
+              </div>
               <ul className="mt-5 space-y-2.5 font-mono text-[12.5px]">
                 {checks.slice(0, revealed).map((c) => (
                   <motion.li

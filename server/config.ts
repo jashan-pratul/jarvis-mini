@@ -29,7 +29,10 @@ export const config = {
     .map((o) => o.trim())
     .filter(Boolean),
   trustProxy: toInt(process.env.TRUST_PROXY, 0),
-  databasePath: path.resolve(process.env.DATABASE_PATH ?? './database/jarvis.sqlite'),
+  databasePath: path.resolve(
+    process.env.DATABASE_PATH ??
+      (process.env.VERCEL ? '/tmp/jarvis.sqlite' : './database/jarvis.sqlite'),
+  ),
   aiPerMinute: toInt(process.env.RATE_LIMIT_AI_PER_MINUTE, 20),
   apiPer15Min: toInt(process.env.RATE_LIMIT_API_PER_15_MIN, 300),
 } as const;

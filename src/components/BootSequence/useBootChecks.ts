@@ -38,14 +38,17 @@ export function useBootChecks() {
     setChecks((prev) => prev.map((c) => (c.id === id ? { ...c, status, detail } : c)));
   }, []);
 
-  const run = useCallback(async () => {
-    if (started.current) return;
+  const run = useCallback(async (force = false) => {
+    if (started.current && !force) return;
     started.current = true;
+    if (force) {
+      setChecks(initialChecks);
+    }
 
     const link = checkHealth().then((health) => {
       setBackend(health);
       if (!health.reachable) {
-        update('link', 'offline', 'Server unreachable');
+        update('link', 'offline', health.offlineReason || 'Server unreachable');
         update('ai', 'offline', 'No server link');
         update('memory', 'offline', 'No server link');
         return;
@@ -98,5 +101,17 @@ export function useBootChecks() {
   }, [setBackend, update]);
 
   const done = checks.filter((c) => c.status !== 'pending').length;
-  return { checks, run, progress: done / checks.length, complete: done === checks.length };
+  const onlineCount = checks.filter((c) => c.status === 'online').length;
+  const offlineCount = checks.filter((c) => c.status === 'offline').length;
+  const degradedCount = checks.filter((c) => c.status === 'degraded').length;
+
+  return {
+    checks,
+    run,
+    progress: done / checks.length,
+    complete: done === checks.length,
+    onlineCount,
+    offlineCount,
+    degradedCount,
+  };
 }

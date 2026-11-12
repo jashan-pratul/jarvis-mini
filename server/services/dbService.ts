@@ -39,11 +39,7 @@ let db: Database.Database | null = null;
 let dbError: string | null = null;
 
 function init(): Database.Database {
-  fs.mkdirSync(path.dirname(config.databasePath), { recursive: true });
-  const instance = new Database(config.databasePath);
-  instance.pragma('journal_mode = WAL');
-  instance.pragma('foreign_keys = ON');
-  instance.exec(`
+  const schema = `
     CREATE TABLE IF NOT EXISTS memories (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       content TEXT NOT NULL,
@@ -73,8 +69,33 @@ function init(): Database.Database {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_scores_score ON scores(score DESC);
-  `);
-  return instance;
+  `;
+
+  try {
+    fs.mkdirSync(path.dirname(config.databasePath), { recursive: true });
+    const instance = new Database(config.databasePath);
+    try {
+      instance.pragma('journal_mode = WAL');
+    } catch {
+      /* ignore if WAL not supported on mount */
+    }
+    instance.pragma('foreign_keys = ON');
+    instance.exec(schema);
+    return instance;
+  } catch (err) {
+    // If configured path failed (e.g. read-only filesystem on serverless), fallback to /tmp or in-memory
+    const fallbackPath = process.env.VERCEL ? '/tmp/jarvis.sqlite' : ':memory:';
+    if (config.databasePath !== fallbackPath) {
+      try {
+        fs.mkdirSync(path.dirname(fallbackPath), { recursive: true });
+      } catch {}
+      const fallback = new Database(fallbackPath);
+      fallback.pragma('foreign_keys = ON');
+      fallback.exec(schema);
+      return fallback;
+    }
+    throw err;
+  }
 }
 
 export function getDb(): Database.Database {
