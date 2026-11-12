@@ -32,7 +32,21 @@ export interface GeminiDiagnostic {
 }
 
 export function getApiKey(): string {
-  return (process.env.GEMINI_API_KEY || config.geminiApiKey || '').trim();
+  const raw =
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GEMINI_KEY ||
+    process.env.VITE_GEMINI_API_KEY ||
+    process.env.GOOGLE_GENAI_API_KEY ||
+    config.geminiApiKey ||
+    '';
+  return raw.replace(/^["']|["']$/g, '').trim();
+}
+
+export function getAvailableKeyNames(): string[] {
+  return Object.keys(process.env).filter((k) =>
+    /gemini|google_api|ai_key/i.test(k),
+  );
 }
 
 export function classifyGeminiError(error: unknown): GeminiDiagnostic {

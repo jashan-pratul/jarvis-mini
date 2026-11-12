@@ -8,7 +8,7 @@ import compression from 'compression';
 import { config, ownerRoutesOpen, validateConfig } from './config.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { dbHealth } from './services/dbService.js';
-import { geminiStatus } from './services/geminiService.js';
+import { geminiStatus, getAvailableKeyNames } from './services/geminiService.js';
 import { chatRouter } from './routes/chat.js';
 import { memoryRouter } from './routes/memory.js';
 import { quizRouter } from './routes/quiz.js';
@@ -100,6 +100,7 @@ app.get('/api/health', (_req, res) => {
       model: gemini.model,
       status: gemini.status,
       detail: gemini.detail,
+      envKeysFound: getAvailableKeyNames(),
     },
     database: { ok: db.ok },
     owner: { protected: !ownerRoutesOpen },
