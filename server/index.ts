@@ -104,6 +104,22 @@ app.get('/api/health', (_req, res) => {
     },
     database: { ok: db.ok },
     owner: { protected: !ownerRoutesOpen },
+    runtime: {
+      isVercel: Boolean(process.env.VERCEL),
+      vercelEnv: process.env.VERCEL_ENV ?? null,
+      commitSha: process.env.VERCEL_GIT_COMMIT_SHA ? process.env.VERCEL_GIT_COMMIT_SHA.slice(0, 7) : null,
+      branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+      customEnvKeys: Object.keys(process.env)
+        .filter(
+          (k) =>
+            !k.startsWith('npm_') &&
+            !k.startsWith('AWS_') &&
+            !k.startsWith('LAMBDA_') &&
+            !k.startsWith('_') &&
+            !['PATH', 'NODE_VERSION', 'LD_LIBRARY_PATH'].includes(k),
+        )
+        .sort(),
+    },
   });
 });
 
