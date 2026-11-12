@@ -86,6 +86,9 @@ chatRouter.post('/', aiLimiter, validateBody(ChatRequestSchema), async (req: Req
     sendEvent('done', { ok: true });
     res.end();
   } catch (error) {
+    if (abortController.signal.aborted || res.writableEnded) {
+      return;
+    }
     const diag = classifyGeminiError(error);
     recordGeminiDiagnostic(diag);
     console.error(`[chat] Stream error (${diag.code}):`, error instanceof Error ? error.message : error);
