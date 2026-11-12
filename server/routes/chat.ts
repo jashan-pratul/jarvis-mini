@@ -2,7 +2,12 @@ import { Router, type Request, type Response } from 'express';
 import { z } from 'zod';
 import { aiLimiter } from '../middleware/rateLimiter.js';
 import { sanitizeText, validateBody } from '../middleware/validate.js';
-import { geminiStatus, streamChat } from '../services/geminiService.js';
+import {
+  classifyGeminiError,
+  geminiStatus,
+  recordGeminiDiagnostic,
+  streamChat,
+} from '../services/geminiService.js';
 
 const ChatRequestSchema = z.object({
   message: z.string().min(1).max(4000),
@@ -32,11 +37,13 @@ chatRouter.post('/', aiLimiter, validateBody(ChatRequestSchema), async (req: Req
     return;
   }
 
-  if (!geminiStatus().configured) {
+  const status = geminiStatus();
+  if (!status.configured) {
     res.status(503).json({
       error: 'ai_unconfigured',
+      code: status.status,
       message:
-        'Gemini API key is not configured on the server yet. Add GEMINI_API_KEY to .env to unlock live AI responses. Local commands (calculator, time, notes, opening apps, mental maths) still work!',
+        'Gemini API key is not configured on the server yet. Configure GEMINI_API_KEY in Vercel Project Settings to unlock live AI responses. Local commands (calculator, time, notes, opening apps, mental maths) still work!',
     });
     return;
   }
@@ -79,9 +86,13 @@ chatRouter.post('/', aiLimiter, validateBody(ChatRequestSchema), async (req: Req
     sendEvent('done', { ok: true });
     res.end();
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Gemini request failed.';
-    console.error('[chat] Stream error:', message);
-    sendEvent('error', { message: 'JARVIS could not complete that Gemini request. Please try again shortly.' });
+    const diag = classifyGeminiError(error);
+    recordGeminiDiagnostic(diag);
+    console.error(`[chat] Stream error (${diag.code}):`, error instanceof Error ? error.message : error);
+    sendEvent('error', {
+      error: diag.code,
+      message: diag.message,
+    });
     res.end();
   }
 });

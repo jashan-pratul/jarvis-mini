@@ -52,6 +52,8 @@ export interface BackendHealth {
   reachable: boolean;
   aiConfigured: boolean;
   model: string | null;
+  aiStatus?: string | null;
+  aiDetail?: string | null;
   databaseOk: boolean;
   ownerProtected: boolean;
   latencyMs: number | null;

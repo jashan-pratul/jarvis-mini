@@ -57,7 +57,7 @@ export function useBootChecks() {
       update(
         'ai',
         health.aiConfigured ? 'online' : 'degraded',
-        health.aiConfigured ? (health.model ?? 'Configured') : 'API key not configured',
+        health.aiConfigured ? (health.model ?? 'Configured') : (health.aiDetail || 'API key not configured'),
       );
       update('memory', health.databaseOk ? 'online' : 'degraded', health.databaseOk ? 'SQLite ready' : 'Database error');
     });

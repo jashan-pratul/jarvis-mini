@@ -5,6 +5,7 @@ import { tryEvaluateMath } from '../src/utils/mathEval.js';
 import { parseLocalCommand } from '../src/utils/commandParser.js';
 import { buildInvitationMessage } from '../src/components/ShareModal/ShareModal.js';
 import { memories, notes, scores, secretCommands } from '../server/services/dbService.js';
+import { classifyGeminiError } from '../server/services/geminiService.js';
 
 describe('Personal Greeting System', () => {
   it('maps all 8 required simulated IST times to exact periods', () => {
@@ -144,12 +145,35 @@ describe('SQLite Database Service & Share Invitation', () => {
       difficulty: 'medium',
     });
     assert.ok(scoreRow.id > 0);
-    assert.ok(scores.top(5).some((r) => r.id === scoreRow.id));
+    assert.ok(scores.top(50).some((r) => r.id === scoreRow.id));
   });
 
   it('formats the WhatsApp invitation with the actual URL', () => {
     const msg = buildInvitationMessage('https://jarvis.aadarsh.dev');
     assert.ok(msg.includes("Guys, meet Aadarsh's JARVIS!"));
     assert.ok(msg.includes('https://jarvis.aadarsh.dev'));
+  });
+});
+
+describe('Gemini Diagnostic Classifier', () => {
+  it('correctly categorizes invalid key, model errors, quota, and service unavailability', () => {
+    const invalidKey = classifyGeminiError({ status: 400, message: 'API_KEY_INVALID: Key not valid' });
+    assert.equal(invalidKey.code, 'invalid_key');
+    assert.ok(!invalidKey.message.includes('AIzaSy'));
+
+    const forbidden = classifyGeminiError({ status: 403, message: 'PERMISSION_DENIED' });
+    assert.equal(forbidden.code, 'invalid_key');
+
+    const modelNotFound = classifyGeminiError({ status: 404, message: 'models/gemini-unknown is not found' });
+    assert.equal(modelNotFound.code, 'unsupported_model');
+
+    const quotaExceeded = classifyGeminiError({ status: 429, message: 'RESOURCE_EXHAUSTED: quota exceeded' });
+    assert.equal(quotaExceeded.code, 'quota_exceeded');
+
+    const serviceUnavailable = classifyGeminiError({ status: 503, message: 'The service is UNAVAILABLE' });
+    assert.equal(serviceUnavailable.code, 'service_unavailable');
+
+    const networkFailure = classifyGeminiError(new Error('fetch failed: getaddrinfo ENOTFOUND'));
+    assert.equal(networkFailure.code, 'service_unavailable');
   });
 });

@@ -73,7 +73,12 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
 interface HealthResponse {
   status: string;
-  ai: { configured: boolean; model: string };
+  ai: {
+    configured: boolean;
+    model: string;
+    status?: string;
+    detail?: string;
+  };
   database: { ok: boolean };
   owner: { protected: boolean };
 }
@@ -87,6 +92,8 @@ export async function checkHealth(): Promise<BackendHealth> {
       reachable: data.status === 'online',
       aiConfigured: data.ai.configured,
       model: data.ai.model,
+      aiStatus: data.ai.status ?? (data.ai.configured ? 'ready' : 'missing_key'),
+      aiDetail: data.ai.detail ?? null,
       databaseOk: data.database.ok,
       ownerProtected: data.owner.protected,
       latencyMs: Math.round(performance.now() - started),
@@ -104,6 +111,8 @@ export async function checkHealth(): Promise<BackendHealth> {
       reachable: false,
       aiConfigured: false,
       model: null,
+      aiStatus: 'offline',
+      aiDetail: reason,
       databaseOk: false,
       ownerProtected: true,
       latencyMs: null,

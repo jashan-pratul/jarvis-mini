@@ -17,10 +17,115 @@ export interface StreamCallbacks {
   onMeta?: (meta: { sources: GroundingSource[]; searchQueries: string[] }) => void;
 }
 
-export function geminiStatus(): { configured: boolean; model: string } {
+export type GeminiDiagnosticCode =
+  | 'ready'
+  | 'missing_key'
+  | 'invalid_key'
+  | 'unsupported_model'
+  | 'quota_exceeded'
+  | 'service_unavailable'
+  | 'unknown_error';
+
+export interface GeminiDiagnostic {
+  code: GeminiDiagnosticCode;
+  message: string;
+}
+
+export function classifyGeminiError(error: unknown): GeminiDiagnostic {
+  if (!config.geminiApiKey) {
+    return {
+      code: 'missing_key',
+      message: 'Gemini API key is not configured on the server yet. Configure GEMINI_API_KEY in Vercel Project Settings.',
+    };
+  }
+
+  const msg =
+    error instanceof Error
+      ? error.message
+      : typeof error === 'object' && error && 'message' in error
+        ? String((error as { message?: unknown }).message)
+        : String(error);
+  const status =
+    typeof error === 'object' && error && 'status' in error
+      ? Number((error as { status?: unknown }).status)
+      : 0;
+
+  if (status === 400 && /API_KEY_INVALID|key not valid/i.test(msg)) {
+    return {
+      code: 'invalid_key',
+      message: 'The configured Gemini API key is invalid. Please verify your API key in Google AI Studio.',
+    };
+  }
+
+  if (status === 403 || /PERMISSION_DENIED|unauthorized/i.test(msg)) {
+    return {
+      code: 'invalid_key',
+      message:
+        'Access denied for the configured Gemini API key. Ensure the Gemini API is enabled in your Google Cloud / AI Studio project.',
+    };
+  }
+
+  if (status === 404 || /model.*not found|unsupported.*model/i.test(msg)) {
+    return {
+      code: 'unsupported_model',
+      message: `The configured model "${config.geminiModel}" is unsupported or deprecated. Defaulting to gemini-3-flash-preview.`,
+    };
+  }
+
+  if (status === 429 || /quota|rate|RESOURCE_EXHAUSTED/i.test(msg)) {
+    return {
+      code: 'quota_exceeded',
+      message: 'Gemini rate limit or quota exceeded. Please wait a moment before sending another message.',
+    };
+  }
+
+  if (status === 503 || /UNAVAILABLE|overloaded|fetch failed|ENOTFOUND|ECONNREFUSED/i.test(msg)) {
+    return {
+      code: 'service_unavailable',
+      message: 'Google Gemini service is temporarily unavailable or unreachable. Please try again in a few moments.',
+    };
+  }
+
   return {
-    configured: config.geminiApiKey.length > 0,
+    code: 'unknown_error',
+    message: 'An unexpected error occurred while communicating with Gemini.',
+  };
+}
+
+let lastDiagnostic: GeminiDiagnostic | null = null;
+export function recordGeminiDiagnostic(diag: GeminiDiagnostic) {
+  lastDiagnostic = diag;
+}
+
+export function geminiStatus(): {
+  configured: boolean;
+  model: string;
+  status: GeminiDiagnosticCode;
+  detail: string;
+} {
+  if (!config.geminiApiKey) {
+    return {
+      configured: false,
+      model: config.geminiModel,
+      status: 'missing_key',
+      detail: 'GEMINI_API_KEY is not configured on the server environment.',
+    };
+  }
+
+  if (lastDiagnostic && lastDiagnostic.code !== 'ready') {
+    return {
+      configured: true,
+      model: config.geminiModel,
+      status: lastDiagnostic.code,
+      detail: lastDiagnostic.message,
+    };
+  }
+
+  return {
+    configured: true,
     model: config.geminiModel,
+    status: 'ready',
+    detail: 'Gemini cognitive core ready.',
   };
 }
 
@@ -173,7 +278,9 @@ export async function streamChat(
   }
 
   if (!stream) {
-    throw lastError || new Error('Could not establish stream with Gemini models.');
+    const diag = classifyGeminiError(lastError);
+    recordGeminiDiagnostic(diag);
+    throw lastError || new Error(diag.message);
   }
 
   let fullText = '';
@@ -192,6 +299,7 @@ export async function streamChat(
     for (const q of g.searchQueries) mergedQueries.add(q);
   }
 
+  recordGeminiDiagnostic({ code: 'ready', message: 'Gemini cognitive core ready.' });
   const sources = [...mergedSources.values()];
   const searchQueries = [...mergedQueries];
   callbacks.onMeta?.({ sources, searchQueries });
@@ -265,8 +373,12 @@ Rules:
   }
 
   if (!res) {
-    throw lastError || new Error('Could not generate quiz questions with Gemini models.');
+    const diag = classifyGeminiError(lastError);
+    recordGeminiDiagnostic(diag);
+    throw lastError || new Error(diag.message);
   }
+
+  recordGeminiDiagnostic({ code: 'ready', message: 'Gemini cognitive core ready.' });
 
   const raw = res.text ?? '[]';
   const parsed = JSON.parse(raw) as Array<{

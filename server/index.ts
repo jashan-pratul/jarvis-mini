@@ -95,7 +95,12 @@ app.get('/api/health', (_req, res) => {
     app: "Aadarsh's JARVIS",
     uptimeSeconds: Math.round((Date.now() - startedAt) / 1000),
     serverTime: new Date().toISOString(),
-    ai: { configured: gemini.configured, model: gemini.model },
+    ai: {
+      configured: gemini.configured,
+      model: gemini.model,
+      status: gemini.status,
+      detail: gemini.detail,
+    },
     database: { ok: db.ok },
     owner: { protected: !ownerRoutesOpen },
   });

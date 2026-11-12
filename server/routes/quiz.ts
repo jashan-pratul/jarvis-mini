@@ -4,7 +4,13 @@ import { z } from 'zod';
 import { aiLimiter } from '../middleware/rateLimiter.js';
 import { sanitizeText, validateBody } from '../middleware/validate.js';
 import { scores } from '../services/dbService.js';
-import { geminiStatus, generateQuizBatch, type GeneratedQuizQuestion } from '../services/geminiService.js';
+import {
+  classifyGeminiError,
+  geminiStatus,
+  recordGeminiDiagnostic,
+  generateQuizBatch,
+  type GeneratedQuizQuestion,
+} from '../services/geminiService.js';
 
 export const quizRouter = Router();
 
@@ -67,8 +73,10 @@ quizRouter.post('/generate', aiLimiter, validateBody(GenerateSchema), async (req
       questions: batch.map((q) => ({ question: q.question, options: q.options })),
     });
   } catch (error) {
-    console.error('[quiz] Generation error:', error instanceof Error ? error.message : error);
-    res.status(502).json({ error: 'quiz_failed', message: 'Failed to generate quiz questions from Gemini.' });
+    const diag = classifyGeminiError(error);
+    recordGeminiDiagnostic(diag);
+    console.error(`[quiz] Generation error (${diag.code}):`, error instanceof Error ? error.message : error);
+    res.status(502).json({ error: diag.code, message: diag.message });
   }
 });
 
