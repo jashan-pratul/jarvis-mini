@@ -31,8 +31,12 @@ export interface GeminiDiagnostic {
   message: string;
 }
 
+export function getApiKey(): string {
+  return (process.env.GEMINI_API_KEY || config.geminiApiKey || '').trim();
+}
+
 export function classifyGeminiError(error: unknown): GeminiDiagnostic {
-  if (!config.geminiApiKey) {
+  if (!getApiKey()) {
     return {
       code: 'missing_key',
       message: 'Gemini API key is not configured on the server yet. Configure GEMINI_API_KEY in Vercel Project Settings.',
@@ -103,7 +107,8 @@ export function geminiStatus(): {
   status: GeminiDiagnosticCode;
   detail: string;
 } {
-  if (!config.geminiApiKey) {
+  const key = getApiKey();
+  if (!key) {
     return {
       configured: false,
       model: config.geminiModel,
@@ -130,9 +135,14 @@ export function geminiStatus(): {
 }
 
 let client: GoogleGenAI | null = null;
+let cachedKey = '';
 function getClient(): GoogleGenAI | null {
-  if (!config.geminiApiKey) return null;
-  if (!client) client = new GoogleGenAI({ apiKey: config.geminiApiKey });
+  const key = getApiKey();
+  if (!key) return null;
+  if (!client || cachedKey !== key) {
+    client = new GoogleGenAI({ apiKey: key });
+    cachedKey = key;
+  }
   return client;
 }
 
